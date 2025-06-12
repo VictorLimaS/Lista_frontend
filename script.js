@@ -5,7 +5,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const API_URL = 'https://lista-backend-six.vercel.app/';
+const API_URL = 'https://lista-backend-six.vercel.app';
 
 const loginSection = document.getElementById('login-section');
 const main = document.getElementById('main');
