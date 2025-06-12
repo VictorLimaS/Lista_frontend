@@ -211,7 +211,6 @@ function iniciarRealtime() {
   }
 }
 
-// Função para logout
 function logout() {
   localStorage.removeItem('usuarioLogado');
   window.usuarioLogado = null;
@@ -219,9 +218,9 @@ function logout() {
   main.classList.add('hidden');
   nomeInput.value = '';
   telefoneInput.value = '';
+  location.reload(); // Recarrega a página
 }
 
-// Botão logout
 btnLogout.addEventListener('click', () => {
   logout();
 });
