@@ -210,7 +210,6 @@ function iniciarRealtime() {
     console.error('Falha na inscrição no canal realtime');
   }
 }
-
 function logout() {
   localStorage.removeItem('usuarioLogado');
   window.usuarioLogado = null;
@@ -218,7 +217,7 @@ function logout() {
   main.classList.add('hidden');
   nomeInput.value = '';
   telefoneInput.value = '';
-  location.reload(); // Recarrega a página
+  location.reload(); 
 }
 
 btnLogout.addEventListener('click', () => {
