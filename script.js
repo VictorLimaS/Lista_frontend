@@ -13,8 +13,26 @@ const nomeInput = document.getElementById('input-nome');
 const telefoneInput = document.getElementById('input-telefone');
 const listaComidas = document.getElementById('lista-comidas');
 const btnLogin = document.getElementById('btn-login');
+const btnLogout = document.getElementById('btn-logout'); // botão logout
+
+// Ao carregar a página, verifica se tem usuário salvo no localStorage
+document.addEventListener('DOMContentLoaded', async () => {
+  const usuarioSalvo = localStorage.getItem('usuarioLogado');
+  if (usuarioSalvo) {
+    window.usuarioLogado = JSON.parse(usuarioSalvo);
+    loginSection.classList.add('hidden');
+    main.classList.remove('hidden');
+    await carregarComidas();
+    iniciarRealtime();
+  } else {
+    loginSection.classList.remove('hidden');
+    main.classList.add('hidden');
+  }
+});
 
 btnLogin.addEventListener('click', async () => {
+  if (btnLogin.disabled) return;
+
   const nome = nomeInput.value.trim();
   const telefone = telefoneInput.value.trim();
 
@@ -27,6 +45,10 @@ btnLogin.addEventListener('click', async () => {
     return;
   }
 
+  btnLogin.disabled = true;
+  const originalText = btnLogin.textContent;
+  btnLogin.textContent = 'Carregando...';
+
   try {
     const res = await fetch(`${API_URL}/usuarios`, {
       method: 'POST',
@@ -37,11 +59,12 @@ btnLogin.addEventListener('click', async () => {
     if (!res.ok) throw new Error(data.error || 'Erro ao autenticar usuário');
 
     window.usuarioLogado = { nome, telefone };
+    localStorage.setItem('usuarioLogado', JSON.stringify({ nome, telefone }));
 
     loginSection.classList.add('hidden');
     main.classList.remove('hidden');
 
-    carregarComidas();
+    await carregarComidas();
     iniciarRealtime();
   } catch (e) {
     Swal.fire({
@@ -49,6 +72,11 @@ btnLogin.addEventListener('click', async () => {
       title: 'Erro',
       text: e.message,
     });
+  } finally {
+    if (!loginSection.classList.contains('hidden')) {
+      btnLogin.disabled = false;
+      btnLogin.textContent = originalText;
+    }
   }
 });
 
@@ -82,10 +110,9 @@ async function carregarComidas() {
         icon.classList.remove('text-yellow-600');
         icon.classList.add('text-gray-400');
       } else {
-        icon.addEventListener('click', () => toggleReserva(item));
+        icon.addEventListener('click', (event) => toggleReserva(item, event));
       }
 
-      // Agora, em vez de mostrar "Disponível", mostramos os nomes dos usuários que reservaram
       const reservados = item.reservados.length > 0 ? item.reservados.map(nome => `<span class="reservado">${nome}</span>`).join(', ') : 'Ninguém';
 
       card.innerHTML = `
@@ -103,7 +130,7 @@ async function carregarComidas() {
   }
 }
 
-async function toggleReserva(item) {
+async function toggleReserva(item, event) {
   const { nome, telefone } = window.usuarioLogado;
   if (!nome || !telefone) {
     Swal.fire({
@@ -113,6 +140,11 @@ async function toggleReserva(item) {
     });
     return;
   }
+
+  const icon = event.target;
+  icon.style.pointerEvents = 'none';
+  const originalIconHTML = icon.innerHTML;
+  icon.innerHTML = '⏳';
 
   try {
     if (item.reservado) {
@@ -145,19 +177,20 @@ async function toggleReserva(item) {
       });
     }
 
-    // Recarrega comidas para atualizar UI
-    carregarComidas();
+    await carregarComidas();
   } catch (e) {
     Swal.fire({
       icon: 'error',
       title: 'Erro',
       text: e.message,
     });
+  } finally {
+    icon.style.pointerEvents = '';
+    icon.innerHTML = originalIconHTML;
   }
 }
 
 function iniciarRealtime() {
-  // Canal realtime na tabela comidas_festa (esquema public)
   const channel = supabase.channel('public:comidas_festa');
 
   channel.on(
@@ -165,7 +198,6 @@ function iniciarRealtime() {
     { event: '*', schema: 'public', table: 'comidas_festa' },
     (payload) => {
       console.log('Mudança detectada na comidas_festa:', payload);
-      // Atualiza lista de comidas quando qualquer mudança ocorrer
       carregarComidas();
     }
   );
@@ -179,4 +211,17 @@ function iniciarRealtime() {
   }
 }
 
+// Função para logout
+function logout() {
+  localStorage.removeItem('usuarioLogado');
+  window.usuarioLogado = null;
+  loginSection.classList.remove('hidden');
+  main.classList.add('hidden');
+  nomeInput.value = '';
+  telefoneInput.value = '';
+}
 
+// Botão logout
+btnLogout.addEventListener('click', () => {
+  logout();
+});
