@@ -5,7 +5,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const API_URL = 'https://lista-backend-pqke.onrender.com';
+const API_URL = 'http://localhost:30000';
 
 const loginSection = document.getElementById('login-section');
 const main = document.getElementById('main');
@@ -13,9 +13,8 @@ const nomeInput = document.getElementById('input-nome');
 const telefoneInput = document.getElementById('input-telefone');
 const listaComidas = document.getElementById('lista-comidas');
 const btnLogin = document.getElementById('btn-login');
-const btnLogout = document.getElementById('btn-logout'); // botão logout
+const btnLogout = document.getElementById('btn-logout'); 
 
-// Ao carregar a página, verifica se tem usuário salvo no localStorage
 document.addEventListener('DOMContentLoaded', async () => {
   const usuarioSalvo = localStorage.getItem('usuarioLogado');
   if (usuarioSalvo) {
@@ -191,25 +190,24 @@ async function toggleReserva(item, event) {
 }
 
 function iniciarRealtime() {
-  const channel = supabase.channel('public:comidas_festa');
-
-  channel.on(
+  const channelComidas = supabase.channel('public:comidas_festa');
+  channelComidas.on(
     'postgres_changes',
     { event: '*', schema: 'public', table: 'comidas_festa' },
-    (payload) => {
-      console.log('Mudança detectada na comidas_festa:', payload);
-      carregarComidas();
-    }
+    () => carregarComidas()
   );
+  channelComidas.subscribe();
 
-  const subscription = channel.subscribe();
-
-  if (subscription) {
-    console.log('Inscrito no canal realtime comidas_festa');
-  } else {
-    console.error('Falha na inscrição no canal realtime');
-  }
+  const channelReservas = supabase.channel('public:reservas_festa');
+  channelReservas.on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: 'reservas_festa' },
+    () => carregarComidas()
+  );
+  channelReservas.subscribe();
 }
+
+
 function logout() {
   localStorage.removeItem('usuarioLogado');
   window.usuarioLogado = null;
