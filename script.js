@@ -79,8 +79,12 @@ btnLogin.addEventListener('click', async () => {
   }
 });
 
+// Função para carregar comidas
 async function carregarComidas() {
   try {
+    const loadingDiv = criarLoader(); // Criar o loader
+    document.body.appendChild(loadingDiv); // Exibir o loader
+
     const { nome, telefone } = window.usuarioLogado;
     const res = await fetch(`${API_URL}/comidas-usuario`, {
       method: 'POST',
@@ -126,8 +130,56 @@ async function carregarComidas() {
     });
   } catch (e) {
     listaComidas.innerHTML = `<p class="p-4 text-red-600">${e.message}</p>`;
+  } finally {
+    const loadingDiv = document.getElementById('loading');
+    if (loadingDiv) loadingDiv.remove(); 
   }
 }
+
+function criarLoader() {
+  const loaderDiv = document.createElement('div');
+  loaderDiv.id = 'loading';
+  loaderDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50';
+
+  const ballsContainer = document.createElement('div');
+  ballsContainer.className = 'flex space-x-2';  
+
+  const iconUrls = [
+    'https://cdn-icons-png.freepik.com/512/6154/6154843.png',
+    'https://cdn-icons-png.freepik.com/512/3060/3060720.png?ga=GA1.1.1746197442.1750055791',
+    'https://cdn-icons-png.freepik.com/512/10342/10342545.png?ga=GA1.1.1746197442.1750055791'
+  ];
+
+  for (let i = 0; i < 3; i++) {
+    const icon = document.createElement('img');
+    icon.src = iconUrls[i];
+    icon.className = 'w-6 h-6'; 
+    icon.style.animation = `pulse 1s ease-in-out infinite`;
+    icon.style.animationDelay = `${i * 0.2}s`; 
+    ballsContainer.appendChild(icon);
+  }
+
+  loaderDiv.appendChild(ballsContainer);
+  return loaderDiv;
+}
+
+const style = document.createElement('style');
+style.innerHTML = `
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+`;
+document.head.appendChild(style);
+
+
 
 async function toggleReserva(item, event) {
   const { nome, telefone } = window.usuarioLogado;
@@ -144,6 +196,9 @@ async function toggleReserva(item, event) {
   icon.style.pointerEvents = 'none';
   const originalIconHTML = icon.innerHTML;
   icon.innerHTML = '⏳';
+
+  const loadingDiv = criarLoader();
+  document.body.appendChild(loadingDiv); 
 
   try {
     if (item.reservado) {
@@ -186,9 +241,12 @@ async function toggleReserva(item, event) {
   } finally {
     icon.style.pointerEvents = '';
     icon.innerHTML = originalIconHTML;
+    const loadingDiv = document.getElementById('loading');
+    if (loadingDiv) loadingDiv.remove(); // Remover o loader após o processo
   }
 }
 
+// Função para iniciar o realtime
 function iniciarRealtime() {
   const channelComidas = supabase.channel('public:comidas_festa');
   channelComidas.on(
@@ -206,7 +264,6 @@ function iniciarRealtime() {
   );
   channelReservas.subscribe();
 }
-
 
 function logout() {
   localStorage.removeItem('usuarioLogado');
