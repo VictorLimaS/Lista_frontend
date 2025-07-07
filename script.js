@@ -93,64 +93,94 @@ async function gerarRelatoriosPDF() {
   try {
     const resUsuarios = await fetch(`${API_URL}/relatorio/usuarios`);
     const usuarios = await resUsuarios.json();
-    if (!resUsuarios.ok) throw new Error('Erro ao buscar relatório de usuários');
 
     const resComidas = await fetch(`${API_URL}/relatorio/comidas-faltantes`);
     const comidas = await resComidas.json();
-    if (!resComidas.ok) throw new Error('Erro ao buscar relatório de comidas faltantes');
 
-    // 🔒 Remove o ADM (telefone 11111111111)
+    const pdf = new jsPDF();
+
     const usuariosFiltrados = usuarios.filter(u => u.telefone !== '11111111111');
 
-    const doc = new jsPDF();
+    const totalUsuarios = usuariosFiltrados.length;
+    const totalComItem = usuariosFiltrados.filter(u => u.item && u.item !== '0').length;
+    const totalSemItem = totalUsuarios - totalComItem;
 
-    // Título: Relatório de Usuários
-    doc.setFontSize(16);
-    doc.setTextColor(33, 37, 41);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Relatório de Usuários', 14, 20);
+    // Título
+    pdf.setFontSize(18);
+    pdf.setTextColor(40, 40, 40);
 
-    doc.autoTable({
-      startY: 25,
-      head: [['Nome', 'Telefone', 'Item Reservado']],
-      body: usuariosFiltrados.map(u => [u.nome, u.telefone, u.item || 'Nenhum']),
-      headStyles: { fillColor: [52, 152, 219], textColor: 255 },
-      styles: { fontSize: 10, cellPadding: 3 },
+    // Resumo
+    pdf.setFontSize(12);
+    pdf.setTextColor(60);
+    pdf.text('Relatório da Festa', 105, 15, { align: 'center' });
+    pdf.text(`Total de usuários: ${totalUsuarios}`, 14, 30);
+    pdf.text(`Com item selecionado: ${totalComItem}`, 14, 38);
+    pdf.text(`Sem item selecionado: ${totalSemItem}`, 14, 46);
+
+
+    // Usuários - tabela
+    pdf.autoTable({
+      startY: 55,
+      head: [['Nome', 'Telefone', 'Item']],
+      body: usuariosFiltrados.map(u => [
+        u.nome,
+        u.telefone,
+        (!u.item || u.item === '0') ? { content: 'NÃO SELECIONOU NADA', styles: { textColor: [220, 20, 60] } } : u.item
+      ]),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [255, 204, 0],  // Amarelo
+        textColor: 0,
+        halign: 'center',
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+      },
     });
 
-    const finalY = doc.lastAutoTable.finalY + 15;
 
-    // Título: Relatório de Comidas Faltantes
-    doc.setFontSize(16);
-    doc.setTextColor(33, 37, 41);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Relatório de Comidas Faltantes', 14, finalY);
+    // Nova página
+    pdf.addPage();
 
-    doc.autoTable({
-      startY: finalY + 5,
+    // Título da nova seção
+    pdf.setFontSize(14);
+    pdf.setTextColor(40);
+    pdf.text('Comidas Faltantes', 14, 20);
+
+    // Comidas - tabela
+    pdf.autoTable({
+      startY: 30,
       head: [['Comida', 'Quantidade Disponível']],
-      body: comidas.map(c => [c.comida, String(c.quantidade)]),
-      headStyles: { fillColor: [231, 76, 60], textColor: 255 },
-      styles: { fontSize: 10, cellPadding: 3 },
+      body: comidas.map(c => [c.comida, c.quantidade]),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [255, 153, 0],
+        textColor: 0,
+        halign: 'center',
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+      },
     });
 
-    // Rodapé com data
-    const dataHoje = new Date().toLocaleDateString('pt-BR');
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${dataHoje}`, 14, doc.internal.pageSize.height - 10);
+    // Salvar
+    pdf.save('relatorio.pdf');
 
-    doc.save(`relatorio.pdf`);
-
-  } catch (e) {
-    console.error('Erro ao gerar PDF unificado:', e);
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error);
     Swal.fire({
       icon: 'error',
-      title: 'Erro ao gerar PDF',
-      text: e.message,
+      title: 'Erro',
+      text: 'Não foi possível gerar o PDF.',
     });
   }
 }
+
+
 
 // Função para carregar comidas
 async function carregarComidas() {
