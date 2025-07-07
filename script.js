@@ -1,6 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const SUPABASE_URL = 'https://dwnohpdgyhsinmnnzmyc.supabase.co'; 
+const SUPABASE_URL = 'https://dwnohpdgyhsinmnnzmyc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3bm9ocGRneWhzaW5tbm56bXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2ODA3MDQsImV4cCI6MjA2NTI1NjcwNH0.q5oyCNRgcFZEtDT2PUyzBGjy-klTSCO59oGiG5cEYwI';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -13,7 +13,7 @@ const nomeInput = document.getElementById('input-nome');
 const telefoneInput = document.getElementById('input-telefone');
 const listaComidas = document.getElementById('lista-comidas');
 const btnLogin = document.getElementById('btn-login');
-const btnLogout = document.getElementById('btn-logout'); 
+const btnLogout = document.getElementById('btn-logout');
 
 document.addEventListener('DOMContentLoaded', async () => {
   const usuarioSalvo = localStorage.getItem('usuarioLogado');
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.usuarioLogado = JSON.parse(usuarioSalvo);
     loginSection.classList.add('hidden');
     main.classList.remove('hidden');
-    if(window.usuarioLogado.telefone === '11111111111') {
+    if (window.usuarioLogado.telefone === '11111111111') {
       await gerarRelatoriosPDF(); // Se já estiver logado como ADM, gerar PDFs
     }
     await carregarComidas();
@@ -66,7 +66,7 @@ btnLogin.addEventListener('click', async () => {
     loginSection.classList.add('hidden');
     main.classList.remove('hidden');
 
-    if(telefone === '11111111111') {
+    if (telefone === '11111111111') {
       await gerarRelatoriosPDF();
     }
 
@@ -86,75 +86,77 @@ btnLogin.addEventListener('click', async () => {
   }
 });
 
-// Função para gerar e baixar os PDFs para o ADM
+// Função para gerar um único PDF com ambos relatórios, com estilo moderno
 async function gerarRelatoriosPDF() {
   const { jsPDF } = window.jspdf;
 
   try {
-    // Buscar usuários
     const resUsuarios = await fetch(`${API_URL}/relatorio/usuarios`);
-    if (!resUsuarios.ok) throw new Error('Erro ao buscar relatório de usuários');
     const usuarios = await resUsuarios.json();
+    if (!resUsuarios.ok) throw new Error('Erro ao buscar relatório de usuários');
 
-    // Buscar comidas faltantes
     const resComidas = await fetch(`${API_URL}/relatorio/comidas-faltantes`);
-    if (!resComidas.ok) throw new Error('Erro ao buscar relatório de comidas faltantes');
     const comidas = await resComidas.json();
+    if (!resComidas.ok) throw new Error('Erro ao buscar relatório de comidas faltantes');
 
-    // Criar PDF usuários
-    const pdfUsuarios = new jsPDF();
-    pdfUsuarios.setFontSize(14);
-    pdfUsuarios.text('Relatório de Usuários', 10, 10);
-    pdfUsuarios.setFontSize(10);
+    // 🔒 Remove o ADM (telefone 11111111111)
+    const usuariosFiltrados = usuarios.filter(u => u.telefone !== '11111111111');
 
-    let y = 20;
-    pdfUsuarios.text('Nome | Telefone | Item', 10, y);
-    y += 10;
+    const doc = new jsPDF();
 
-    usuarios.forEach(u => {
-      const linha = `${u.nome} | ${u.telefone} | ${u.item || '0'}`;
-      pdfUsuarios.text(linha, 10, y);
-      y += 8;
-      if (y > 280) {
-        pdfUsuarios.addPage();
-        y = 10;
-      }
+    // Título: Relatório de Usuários
+    doc.setFontSize(16);
+    doc.setTextColor(33, 37, 41);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório de Usuários', 14, 20);
+
+    doc.autoTable({
+      startY: 25,
+      head: [['Nome', 'Telefone', 'Item Reservado']],
+      body: usuariosFiltrados.map(u => [u.nome, u.telefone, u.item || 'Nenhum']),
+      headStyles: { fillColor: [52, 152, 219], textColor: 255 },
+      styles: { fontSize: 10, cellPadding: 3 },
     });
 
-    pdfUsuarios.save('relatorio_usuarios.pdf');
+    const finalY = doc.lastAutoTable.finalY + 15;
 
-    // Criar PDF comidas faltantes
-    const pdfComidas = new jsPDF();
-    pdfComidas.setFontSize(14);
-    pdfComidas.text('Relatório de Comidas Faltantes', 10, 10);
-    pdfComidas.setFontSize(10);
+    // Título: Relatório de Comidas Faltantes
+    doc.setFontSize(16);
+    doc.setTextColor(33, 37, 41);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório de Comidas Faltantes', 14, finalY);
 
-    y = 20;
-    pdfComidas.text('Comida | Quantidade', 10, y);
-    y += 10;
-
-    comidas.forEach(c => {
-      const linha = `${c.comida} | ${c.quantidade}`;
-      pdfComidas.text(linha, 10, y);
-      y += 8;
-      if (y > 280) {
-        pdfComidas.addPage();
-        y = 10;
-      }
+    doc.autoTable({
+      startY: finalY + 5,
+      head: [['Comida', 'Quantidade Disponível']],
+      body: comidas.map(c => [c.comida, String(c.quantidade)]),
+      headStyles: { fillColor: [231, 76, 60], textColor: 255 },
+      styles: { fontSize: 10, cellPadding: 3 },
     });
 
-    pdfComidas.save('relatorio_comidas_faltantes.pdf');
+    // Rodapé com data
+    const dataHoje = new Date().toLocaleDateString('pt-BR');
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${dataHoje}`, 14, doc.internal.pageSize.height - 10);
+
+    doc.save(`relatorio_unificado_${dataHoje.replace(/\//g, '-')}.pdf`);
 
   } catch (e) {
-    console.error('Erro ao gerar PDFs:', e);
+    console.error('Erro ao gerar PDF unificado:', e);
+    Swal.fire({
+      icon: 'error',
+      title: 'Erro ao gerar PDF',
+      text: e.message,
+    });
   }
 }
 
 // Função para carregar comidas
 async function carregarComidas() {
   try {
-    const loadingDiv = criarLoader(); 
-    document.body.appendChild(loadingDiv); 
+    const loadingDiv = criarLoader();
+    document.body.appendChild(loadingDiv);
 
     const { nome, telefone } = window.usuarioLogado;
     const res = await fetch(`${API_URL}/comidas-usuario`, {
@@ -203,7 +205,7 @@ async function carregarComidas() {
     listaComidas.innerHTML = `<p class="p-4 text-red-600">${e.message}</p>`;
   } finally {
     const loadingDiv = document.getElementById('loading');
-    if (loadingDiv) loadingDiv.remove(); 
+    if (loadingDiv) loadingDiv.remove();
   }
 }
 
@@ -213,7 +215,7 @@ function criarLoader() {
   loaderDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50';
 
   const ballsContainer = document.createElement('div');
-  ballsContainer.className = 'flex space-x-2';  
+  ballsContainer.className = 'flex space-x-2';
 
   const iconUrls = [
     'https://cdn-icons-png.freepik.com/512/6154/6154843.png',
@@ -224,9 +226,9 @@ function criarLoader() {
   for (let i = 0; i < 3; i++) {
     const icon = document.createElement('img');
     icon.src = iconUrls[i];
-    icon.className = 'w-6 h-6'; 
+    icon.className = 'w-6 h-6';
     icon.style.animation = `pulse 1s ease-in-out infinite`;
-    icon.style.animationDelay = `${i * 0.2}s`; 
+    icon.style.animationDelay = `${i * 0.2}s`;
     ballsContainer.appendChild(icon);
   }
 
@@ -267,7 +269,7 @@ async function toggleReserva(item, event) {
   icon.innerHTML = '⏳';
 
   const loadingDiv = criarLoader();
-  document.body.appendChild(loadingDiv); 
+  document.body.appendChild(loadingDiv);
 
   try {
     if (item.reservado) {
@@ -311,7 +313,7 @@ async function toggleReserva(item, event) {
     icon.style.pointerEvents = '';
     icon.innerHTML = originalIconHTML;
     const loadingDiv = document.getElementById('loading');
-    if (loadingDiv) loadingDiv.remove(); 
+    if (loadingDiv) loadingDiv.remove();
   }
 }
 
@@ -340,7 +342,7 @@ function logout() {
   main.classList.add('hidden');
   nomeInput.value = '';
   telefoneInput.value = '';
-  location.reload(); 
+  location.reload();
 }
 
 btnLogout.addEventListener('click', () => {
