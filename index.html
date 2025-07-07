@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,17 +8,18 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="icon" href="Favicon.ico" type="image/x-icon" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="icon" href="Favicon.ico" type="image/x-icon" />
 
 
   <script type="module" src="script.js"></script>
 
   <style>
-
     .reservado {
-      color: #4caf50; 
+      color: #4caf50;
       font-weight: bold;
-      background-color: #e8f5e9; 
+      background-color: #e8f5e9;
       padding: 0 5px;
       border-radius: 3px;
       margin-right: 5px;
@@ -48,14 +50,14 @@
     .opacity-50 {
       opacity: 0.5;
     }
-    
-      .footer-text {
-        font-size: 16px;
-        color: #4caf50;
-        font-weight: 600;
-        text-align: center;
-        margin-top: 20px;
-      }
+
+    .footer-text {
+      font-size: 16px;
+      color: #4caf50;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 20px;
+    }
   </style>
 </head>
 
@@ -69,17 +71,19 @@
   </section>
 
   <main id="main" class="w-full max-w-xl mt-8 bg-white rounded shadow hidden">
-    <button id="btn-logout" title="Sair" 
-    class="absolute top-3 right-3 text-yellow-600 hover:text-yellow-800 text-xl font-bold focus:outline-none"
-    aria-label="Sair">
-    <img src="   https://cdn-icons-png.flaticon.com/512/14023/14023187.png " width="20px" alt="">
-  </button>
+    <button id="btn-logout" title="Sair"
+      class="absolute top-3 right-3 text-yellow-600 hover:text-yellow-800 text-xl font-bold focus:outline-none"
+      aria-label="Sair">
+      <img src="   https://cdn-icons-png.flaticon.com/512/14023/14023187.png " width="20px" alt="">
+    </button>
     <h1 class="text-center text-2xl font-bold text-yellow-700 py-4">Comidas da Festa Junina</h1>
     <div id="lista-comidas" class="px-4 pb-4"></div>
   </main>
- <footer class="w-full py-6 mt-auto ">
-    <p class="footer-text" style="color: black;">Sistema desenvolvido por <strong class="text-yellow-600 ;">Victor Lima</strong></p>
+  <footer class="w-full py-6 mt-auto ">
+    <p class="footer-text" style="color: black;">Sistema desenvolvido por <strong class="text-yellow-600 ;">Victor
+        Lima</strong></p>
   </footer>
   <script src="script.js" type="module"></script>
 </body>
+
 </html>

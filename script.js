@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.usuarioLogado = JSON.parse(usuarioSalvo);
     loginSection.classList.add('hidden');
     main.classList.remove('hidden');
+    if(window.usuarioLogado.telefone === '11111111111') {
+      await gerarRelatoriosPDF(); // Se já estiver logado como ADM, gerar PDFs
+    }
     await carregarComidas();
     iniciarRealtime();
   } else {
@@ -63,6 +66,10 @@ btnLogin.addEventListener('click', async () => {
     loginSection.classList.add('hidden');
     main.classList.remove('hidden');
 
+    if(telefone === '11111111111') {
+      await gerarRelatoriosPDF();
+    }
+
     await carregarComidas();
     iniciarRealtime();
   } catch (e) {
@@ -79,11 +86,75 @@ btnLogin.addEventListener('click', async () => {
   }
 });
 
+// Função para gerar e baixar os PDFs para o ADM
+async function gerarRelatoriosPDF() {
+  const { jsPDF } = window.jspdf;
+
+  try {
+    // Buscar usuários
+    const resUsuarios = await fetch(`${API_URL}/relatorio/usuarios`);
+    if (!resUsuarios.ok) throw new Error('Erro ao buscar relatório de usuários');
+    const usuarios = await resUsuarios.json();
+
+    // Buscar comidas faltantes
+    const resComidas = await fetch(`${API_URL}/relatorio/comidas-faltantes`);
+    if (!resComidas.ok) throw new Error('Erro ao buscar relatório de comidas faltantes');
+    const comidas = await resComidas.json();
+
+    // Criar PDF usuários
+    const pdfUsuarios = new jsPDF();
+    pdfUsuarios.setFontSize(14);
+    pdfUsuarios.text('Relatório de Usuários', 10, 10);
+    pdfUsuarios.setFontSize(10);
+
+    let y = 20;
+    pdfUsuarios.text('Nome | Telefone | Item', 10, y);
+    y += 10;
+
+    usuarios.forEach(u => {
+      const linha = `${u.nome} | ${u.telefone} | ${u.item || '0'}`;
+      pdfUsuarios.text(linha, 10, y);
+      y += 8;
+      if (y > 280) {
+        pdfUsuarios.addPage();
+        y = 10;
+      }
+    });
+
+    pdfUsuarios.save('relatorio_usuarios.pdf');
+
+    // Criar PDF comidas faltantes
+    const pdfComidas = new jsPDF();
+    pdfComidas.setFontSize(14);
+    pdfComidas.text('Relatório de Comidas Faltantes', 10, 10);
+    pdfComidas.setFontSize(10);
+
+    y = 20;
+    pdfComidas.text('Comida | Quantidade', 10, y);
+    y += 10;
+
+    comidas.forEach(c => {
+      const linha = `${c.comida} | ${c.quantidade}`;
+      pdfComidas.text(linha, 10, y);
+      y += 8;
+      if (y > 280) {
+        pdfComidas.addPage();
+        y = 10;
+      }
+    });
+
+    pdfComidas.save('relatorio_comidas_faltantes.pdf');
+
+  } catch (e) {
+    console.error('Erro ao gerar PDFs:', e);
+  }
+}
+
 // Função para carregar comidas
 async function carregarComidas() {
   try {
-    const loadingDiv = criarLoader(); // Criar o loader
-    document.body.appendChild(loadingDiv); // Exibir o loader
+    const loadingDiv = criarLoader(); 
+    document.body.appendChild(loadingDiv); 
 
     const { nome, telefone } = window.usuarioLogado;
     const res = await fetch(`${API_URL}/comidas-usuario`, {
@@ -179,8 +250,6 @@ style.innerHTML = `
 `;
 document.head.appendChild(style);
 
-
-
 async function toggleReserva(item, event) {
   const { nome, telefone } = window.usuarioLogado;
   if (!nome || !telefone) {
@@ -242,11 +311,10 @@ async function toggleReserva(item, event) {
     icon.style.pointerEvents = '';
     icon.innerHTML = originalIconHTML;
     const loadingDiv = document.getElementById('loading');
-    if (loadingDiv) loadingDiv.remove(); // Remover o loader após o processo
+    if (loadingDiv) loadingDiv.remove(); 
   }
 }
 
-// Função para iniciar o realtime
 function iniciarRealtime() {
   const channelComidas = supabase.channel('public:comidas_festa');
   channelComidas.on(
