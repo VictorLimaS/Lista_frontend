@@ -140,7 +140,7 @@ async function gerarRelatoriosPDF() {
     doc.setTextColor(100);
     doc.text(`Gerado em: ${dataHoje}`, 14, doc.internal.pageSize.height - 10);
 
-    doc.save(`relatorio_unificado_${dataHoje.replace(/\//g, '-')}.pdf`);
+    doc.save(`relatorio.pdf`);
 
   } catch (e) {
     console.error('Erro ao gerar PDF unificado:', e);
